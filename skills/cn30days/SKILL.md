@@ -1,8 +1,8 @@
 ---
 name: cn30days
 version: "0.1.0"
-description: "Research what people are talking about in the Chinese internet - Weibo, Baidu, Bilibili, GitHub trends, and authoritative news. Pulls hot topics and engagement data from platforms accessible inside China."
-argument-hint: 'cn30days | cn30days AI | cn30days 高考 | cn30days --emit json'
+description: "Research what people are talking about in the Chinese internet - Weibo, Baidu, Bilibili, GitHub trends, and authoritative news. Pulls hot topics and engagement data from platforms accessible inside China, then synthesizes a narrative report."
+argument-hint: 'cn30days | cn30days AI | cn30days 高考 | cn30days 华为 vs 小米'
 allowed-tools: Bash, Read, Write, WebSearch
 homepage: https://github.com/BlueBridge-E/cn30days-skill
 repository: https://github.com/BlueBridge-E/cn30days-skill
@@ -36,112 +36,207 @@ metadata:
 
 # cn30days — 中国互联网全网热搜聚合 Skill
 
-> What's hot in the Chinese internet RIGHT NOW. Weibo hot search. Baidu trending. Bilibili popular. GitHub stars. All scored and ranked by real engagement.
+> What's hot in the Chinese internet RIGHT NOW. Weibo hot search. Baidu trending. Bilibili popular. GitHub stars. Authoritative news. All collected by the engine, then AI reads it all and writes you a narrative synthesis with patterns and conclusions.
 
-## What It Does
+**核心思路:** Python engine 负责多源并行采集 → AI 负责读取数据、提炼模式、写成叙事段落。
+
+---
+
+# SKILL CONTRACT — 启动流程（每次调用必须遵循）
+
+## Step 1: 运行 Engine
 
 ```bash
-python3 $SKILL_DIR/scripts/cn30days.py
+source ~/.openclaw/workspace/.secure/github-tokens.sh 2>/dev/null || true
+python3 "$SKILL_DIR/scripts/cn30days.py" --emit compact
 ```
 
-Zero config. Weibo, Baidu, Bilibili work immediately. Set `GITHUB_TOKEN` for GitHub trends.
+不要跳过这一步。Engine 是 skill 的骨架。没有 engine 输出就是瞎编。
 
-## When To Use
+## Step 2: 读取并理解 Engine 输出
 
-- "最近微博上在讨论什么？"
-- "B站最近有什么火的视频？"
-- "AI 圈最近有什么新项目？" (GitHub trends)
-- "帮我查查今天的热搜"
-- "最近一周有什么值得关注的事？"
-- "cn30days AI agent" — topic-focused query
+Engine 输出结构：
+- **## 数据采集报告**: 来源、条数、可用/失败
+- **## 🔥 综合热度 Top 20**: 跨平台归一化排序
+- **## 🧣 微博热搜**: Top 10 微博话题
+- **## 🔍 百度热搜**: Top 10 百度搜索
+- **## 📺 B站热门**: Top 10 B站视频
+- **## ⭐ GitHub 趋势**: Top 10 仓库
+- **## 📰 权威媒体**: Top 10 官媒稿件
+- **Engine footer**: 统计摘要
 
-## Data Sources
+## Step 3: AI 合成 → 叙事化输出
 
-| Source | Signal | No Auth | Signal Type |
-|---|---|---|---|
-| 🧣 **Weibo** 热搜 | raw_hot heat index | ✅ | Public opinion pulse |
-| 🔍 **Baidu** 热搜 | hotScore | ✅ | Mass search intent |
-| 📺 **Bilibili** 热门 | views + danmaku + likes | ✅ | Youth culture signal |
-| ⭐ **GitHub** 趋势 | stars (7-day window) | ⚠️ token | Developer consensus |
-| 📰 **PeopleDaily/Xinhua** RSS | editorial coverage | ✅ | Authoritative news |
+你必须阅读 engine 的完整输出，然后自己写出以下结构的叙事报告。不允许直接复制 engine 的列表。
 
-## Usage
+---
 
-### Quick scan — compact AI synthesis format
+# OUTPUT CONTRACT — 输出协议
 
-```bash
-python3 $SKILL_DIR/scripts/cn30days.py --emit compact
+## BADGE（必须第一行）
+
+```
+🇨🇳 cn30days v{VERSION} · synced {YYYY-MM-DD}
 ```
 
-### Full JSON for custom processing
+从 SKILL.md 头部取 version，从今天取日期。空一行后开始正文。
 
-```bash
-python3 $SKILL_DIR/scripts/cn30days.py --emit json
+## QUERY_TYPE 判断
+
+根据用户输入自动判断类型：
+- `GENERAL` — 没有特殊关键词，就是"看看今天有什么"或概括性话题
+- `TOPIC` — 用户指定了特定话题，如 "cn30days AI"、"cn30days 高考"
+- `COMPARISON` — 包含"vs"或"对比"，如 "cn30days 华为 vs 小米"
+- `RECOMMENDATIONS` — 包含"最好"、"推荐"、"Top"、"最佳"、"有什么好的"
+
+## 输出格式（按类型）
+
+### GENERAL（无指定话题）— 默认就是这种
+
+```
+🇨🇳 cn30days v{VERSION} · synced {YYYY-MM-DD}
+
+今日全网速览：
+
+{bold-lead-in 段落1: 今天最大的新闻是什么，覆盖 3-4 句话}
+{bold-lead-in 段落2: 次大焦点，覆盖 3-4 句话}
+{bold-lead-in 段落3: 值得关注的社会情绪/文化趋势}
+{bold-lead-in 段落4: 技术/GitHub 动态}
+
+关键词分析：
+
+1. {关键词1} — {这个方向为什么热，数据支撑，来源}
+2. {关键词2} — ...
+3. {关键词3} — ...
+...
 ```
 
-### Specific sources only
+**bold-lead-in 段落写法：**
+- 每一段用 `**粗体开头几句**` 作为引子，然后展开
+- 包含具体数据（多少播放、多少赞、哪个排名）
+- 标注来源平台（微博/B站/百度/GitHub/人民日报）
+- 有 URL 的用 `[标题](URL)` 做 inline 链接
+- 禁止 `##` 小节标题
+- 禁止单独列 `Sources:` 块
+- 禁止 em-dash（—），用 ` - ` 替代
 
-```bash
-python3 $SKILL_DIR/scripts/cn30days.py --sources weibo,baidu
+### TOPIC（指定话题）
+
+```
+🇨🇳 cn30days v{VERSION} · synced {YYYY-MM-DD}
+
+关于「{话题}」，我从数据中提炼了以下发现：
+
+{bold-lead-in 段落1: 核心发现}
+{bold-lead-in 段落2: 相关数据佐证}
+{bold-lead-in 段落3: 社区反应/讨论方向}
+...
+
+关键结论：
+
+1. {结论} — {证据 + 来源}
+2. ...
 ```
 
-### Extended GitHub window
+### COMPARISON（对比）
 
-```bash
-python3 $SKILL_DIR/scripts/cn30days.py --days 14
+```
+🇨🇳 cn30days v{VERSION} · synced {YYYY-MM-DD}
+
+# {A} vs {B}: 今日全网对比
+
+## 一言蔽之
+{一句话总结}
+
+## {A}
+{3-5 句关于 A 的发现，来源数据}
+
+## {B}
+{3-5 句关于 B 的发现，来源数据}
+
+## 对比分析
+
+| 维度 | {A} | {B} |
+|---|---|---|
+| 热度 | {数据} | {数据} |
+| 舆情方向 | {正面/负面/中性} | {正面/负面/中性} |
+| 代表事件 | {事件} | {事件} |
+
+## 结论
+{2-3 句总结}
 ```
 
-### With GitHub token
+### RECOMMENDATIONS（推荐类）
 
-```bash
-GITHUB_TOKEN=ghp_xxx python3 $SKILL_DIR/scripts/cn30days.py
+```
+🇨🇳 cn30days v{VERSION} · synced {YYYY-MM-DD}
+
+关于「{话题}」的推荐清单：
+
+1. {推荐项} — {为什么推荐，热度/数据}
+2. ...
 ```
 
 ---
 
-# SKILL CONTRACT — 输出协议
+## 输出铁律（LAWS）
 
-When the user invokes `cn30days` or asks about Chinese internet trends, follow these rules:
+**LAW 1: BADGE 必须第一行，不能少。** 这是防止 AI 写 blog-post 风格标题的锚点。
 
-## 输出格式
+**LAW 2: 禁止 `##` 小节标题（COMPARISON 除外）。** 用粗体段落开头替代。
 
-### BADGE (第一行)
+**LAW 3: 禁止 em-dash。** 用 ` - ` 替代 `—` 和 `–`。
 
+**LAW 4: 禁止末尾 Sources 块。** 用 inline `[平台](URL)` 链接替代。Engine footer 就是来源列表。
+
+**LAW 5: Engine footer 必须存在于输出末尾。** 直接通过 engine 的 `---` 分割线 + `✅ cn30days engine` 行。
+
+**LAW 6: Inline 链接必须。** 提到具体话题词条、视频、仓库、新闻时，有能力就用 `[名字](URL)`。
+
+**LAW 7: 有数据才说话。** 每条结论必须有 engine 数据支撑，不编造。
+
+**LAW 8: 中文输出。** 整篇报告用中文撰写。
+
+---
+
+## 合成后自检清单
+
+在发送之前，检查：
+
+1. □ 第一行是 BADGE 吗？
+2. □ 没有 `##` 小节标题吗（COMPARISON 除外）？
+3. □ 没有 em-dash 吗？
+4. □ 末尾没有裸露的 `Sources:` 块吗？
+5. □ 有 inline `[链接](URL)` 吗？
+6. □ 有 engine footer 吗？
+7. □ 全是中文吗？
+
+全部通过再发送。
+
+---
+
+## 数据源参考
+
+| Source | Signal | Auth | Icon |
+|---|---|---|---|
+| 微博热搜 | raw_hot heat index | None | 🧣 |
+| 百度热搜 | hotScore | None | 🔍 |
+| Bilibili 热门 | views + danmaku + likes | None | 📺 |
+| GitHub 趋势 | stars (7-day) | Token (optional) | ⭐ |
+| 权威媒体 (人民网/新华社) | editorial | None | 📰 |
+
+## 独立 CLI 使用
+
+```bash
+# 采集数据（不合成）
+python3 scripts/cn30days.py --emit compact
+
+# JSON 输出
+python3 scripts/cn30days.py --emit json
+
+# 特定来源
+python3 scripts/cn30days.py --sources weibo,baidu
+
+# GitHub 更多天
+python3 scripts/cn30days.py --days 14
 ```
-🇨🇳 cn30days v0.1.0 · synced YYYY-MM-DD
-```
-
-### 结构
-
-1. **数据采集概览** — 几个数据源，多少条，哪些可用/失败
-2. **🔥 综合热度 Top 15** — 跨平台统一的卷标列表，附热度评分和来源
-3. **按来源详列** — 每个来源的 Top 10
-4. **Engine footer** — 统计摘要
-
-### 规则
-
-- **LAW 1**: 综合热度排序，不是简单罗列。B站视频+微博热搜+百度热搜混排，按归一化热度从高到低
-- **LAW 2**: 每个条目标注来源平台和 emoji icon
-- **LAW 3**: 百度热搜的 `desc` 字段提供上下文，包含在输出中
-- **LAW 4**: GitHub 结果展示 repo 名 + stars + 描述
-- **LAW 5**: Engine footer 必须包含在输出末尾
-
-## Post-Processing Tips
-
-After running the engine, use `WebSearch` to verify or expand on particularly interesting items. The engine provides WHAT people are talking about; web search can add WHY.
-
-## Configuration
-
-Create `~/.cn30days/config.json` (optional):
-
-```json
-{
-  "github_token": "ghp_xxx",
-  "sources": ["weibo", "baidu", "bilibili", "github", "news"],
-  "days": 7,
-  "max_per_source": 20
-}
-```
-
-Environment variables override config file:
-- `GITHUB_TOKEN` — GitHub API token (increases rate limit from 60/h to 5000/h)
