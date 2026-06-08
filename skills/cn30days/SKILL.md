@@ -62,7 +62,20 @@ python3 "$SKILL_DIR/scripts/cn30days.py" --emit compact
 
 不要跳过这一步。Engine 是 skill 的骨架。没有 engine 输出就是瞎编。
 
-## Step 2: 读取并理解 Engine 输出
+## Step 2: （可选）WebSearch 补充
+
+**当用户指定了话题时**，在 engine 数据采集完成后，用 WebSearch 补充 2-3 条外部信息以丰富报告深度。
+
+```
+web_search: "{话题} 最新 2026"（中文，count=5）
+```
+
+WebSearch 的作用：
+- 补充不在热搜上但值得关注的行业动态
+- 提供更详细的背景和分析
+- 标注为"外部信源"，区别于 engine 的实时热度数据
+
+在合成时，将 WebSearch 结果与 engine 数据融合，标注各自来源。
 
 Engine 输出结构：
 - **## 数据采集报告**: 来源、条数、可用/失败
@@ -74,7 +87,7 @@ Engine 输出结构：
 - **## 📰 权威媒体**: Top 10 官媒稿件
 - **Engine footer**: 统计摘要
 
-## Step 3: AI 合成 → 叙事化输出
+## Step 4: AI 合成 → 叙事化输出
 
 你必须阅读 engine 的完整输出，然后自己写出以下结构的叙事报告。不允许直接复制 engine 的列表。
 
@@ -134,18 +147,24 @@ Engine 输出结构：
 ```
 🇨🇳 cn30days v{VERSION} · synced {YYYY-MM-DD}
 
-关于「{话题}」，我从数据中提炼了以下发现：
+关于「{话题}」，我从全网采集了以下发现：
 
-{bold-lead-in 段落1: 核心发现}
-{bold-lead-in 段落2: 相关数据佐证}
-{bold-lead-in 段落3: 社区反应/讨论方向}
+{bold-lead-in 段落1: 核心发现 - 来自 engine 数据}
+{bold-lead-in 段落2: 行业背景 - 来自 WebSearch 补充}
+{bold-lead-in 段落3: 社区反应/讨论方向 - 来自 engine 数据}
 ...
 
 关键结论：
 
-1. {结论} — {证据 + 来源}
+1. {结论} — {证据 + 来源标注：engine数据 / WebSearch / 两者交叉验证}
 2. ...
 ```
+
+**WebSearch 与 engine 数据的融合规则：**
+- engine 数据标注为"来自全网热搜"，提供实时热度
+- WebSearch 数据标注为"来自行业报道"，提供深度背景
+- 两者一致 → 标记为"交叉验证"
+- 两者不一致 → 列出各自说法，优先采信 engine（实时数据）
 
 ### COMPARISON（对比）
 
