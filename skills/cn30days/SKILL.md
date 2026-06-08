@@ -46,6 +46,15 @@ metadata:
 
 ## Step 1: 运行 Engine
 
+**如果用户指定了话题**（如 `cn30days AI`、`cn30days 考研`），加 `--topic`：
+
+```bash
+source ~/.openclaw/workspace/.secure/github-tokens.sh 2>/dev/null || true
+python3 "$SKILL_DIR/scripts/cn30days.py" --topic "{话题}" --emit compact
+```
+
+**如果没有指定话题**（如 `cn30days`），不加 `--topic`：
+
 ```bash
 source ~/.openclaw/workspace/.secure/github-tokens.sh 2>/dev/null || true
 python3 "$SKILL_DIR/scripts/cn30days.py" --emit compact

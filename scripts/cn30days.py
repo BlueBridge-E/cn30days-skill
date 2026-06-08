@@ -28,6 +28,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
+# Lazy import for topic expansion (same directory)
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _SCRIPT_DIR)
+try:
+    from topic_expansions import expand_topic
+except ImportError:
+    def expand_topic(t):
+        return [t.strip().lower()]
+
 VERSION = "0.1.0"
 BEIJING_TZ = timezone(timedelta(hours=8))
 
@@ -466,6 +475,8 @@ Examples:
                         help="Output format (default: compact for AI synthesis)")
     parser.add_argument("--sources", default="weibo,baidu,bilibili,github,news",
                         help="Comma-separated source list")
+    parser.add_argument("--topic", default="",
+                        help="Filter results by keyword/topic (e.g. 'AI', '高考', '考研')")
     parser.add_argument("--days", type=int, default=7,
                         help="Days to look back for time-based sources (default: 7)")
     parser.add_argument("--version", action="version", version=f"cn30days v{VERSION}")
@@ -499,6 +510,27 @@ Examples:
                 results[src] = [{"error": f"{src}: {e}"}]
 
     unified = compute_cross_source_heat(results)
+
+    # Topic filter: multi-strategy keyword match with topic expansion
+    topic = (args.topic or "").strip()
+    if topic:
+        # Expand topic to related keywords (AI → AI, 人工智能, 大模型, ChatGPT, etc.)
+        keywords = expand_topic(topic)
+        # Also include single-word components of the original query
+        extra = [w.strip().lower() for w in topic.split() if w.strip()]
+        keywords = list(set(keywords + extra))
+
+        filtered = []
+        for item in unified:
+            title = item.get("title", "").lower()
+            desc = item.get("desc", "").lower()
+            sub = item.get("sub_text", "").lower()
+            text = f"{title} {desc} {sub}"
+
+            if any(kw in text for kw in keywords):
+                filtered.append(item)
+
+        unified = filtered
 
     if args.emit == "json":
         print(format_json(results, unified))
